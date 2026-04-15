@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Embudo de propuestas — Click+Clack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --surface-2: #f1efe8;
+    --text-1: #2c2c2a;
+    --text-2: #5f5e5a;
+    --text-3: #888780;
+    --border-1: rgba(0,0,0,0.08);
+    --border-2: rgba(0,0,0,0.18);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #242422;
+      --surface-2: #2c2c2a;
+      --text-1: #f1efe8;
+      --text-2: #b4b2a9;
+      --text-3: #888780;
+      --border-1: rgba(255,255,255,0.08);
+      --border-2: rgba(255,255,255,0.18);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-1); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px 24px 64px; }
+  .ccc-head { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap;}
+  .ccc-title { font-size:22px; font-weight:500; margin:0; color: var(--text-1); }
+  .ccc-sub { font-size:13px; color:var(--text-2); margin:4px 0 0; }
+  .ccc-controls { font-size:13px; color:var(--text-2); }
+  .ccc-section-h { font-size:11px; color:var(--text-3); text-transform:uppercase; letter-spacing:0.04em; margin:0 0 8px; font-weight:500; }
+  .ccc-grid { display:grid; gap:6px; margin-bottom:1.5rem; }
+  .ccc-funnel { grid-template-columns: repeat(6, minmax(0,1fr)); }
+  .ccc-terminal { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .ccc-col { background: var(--surface-2); border-radius: var(--radius); padding:10px 8px; min-height:200px; display:flex; flex-direction:column; }
+  .ccc-col.terminal { min-height:140px; }
+  .ccc-col-h { font-size:11px; color: var(--text-2); margin-bottom:2px; line-height:1.3; min-height:28px; }
+  .ccc-col-c { font-size:20px; font-weight:500; color: var(--text-1); margin-bottom:8px; }
+  .ccc-dots { display:flex; flex-wrap:wrap; gap:4px; align-content:flex-start; flex:1; }
+  .ccc-dot { width:11px; height:11px; border-radius:50%; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  .ccc-dot:hover { transform:scale(1.6); box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--border-2); z-index:2; position:relative; }
+  .ccc-dot.dim { opacity:.18; }
+  .ccc-dot.terminal { opacity:.55; }
+  .ccc-dot.terminal:hover { opacity:1; }
+  .ccc-dot.terminal.dim { opacity:.12; }
+  .ccc-legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color: var(--text-2); margin-bottom:1rem; align-items:center; }
+  .ccc-lg-item { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; padding:2px 6px; border-radius: var(--radius); }
+  .ccc-lg-item:hover { background: var(--surface-2); }
+  .ccc-lg-item.off { opacity:.4; }
+  .ccc-lg-dot { width:10px; height:10px; border-radius:50%; }
+  .ccc-tip { position:fixed; background: var(--surface); border:0.5px solid var(--border-2); border-radius: var(--radius); padding:8px 10px; font-size:12px; max-width:280px; pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,.12); z-index:1000; opacity:0; transition:opacity .1s; color: var(--text-1); }
+  .ccc-tip.on { opacity:1; }
+  .ccc-tip-t { font-weight:500; margin-bottom:3px; line-height:1.3; }
+  .ccc-tip-r { color: var(--text-2); font-size:11px; line-height:1.4; }
+  .ccc-foot { margin-top: 32px; font-size: 11px; color: var(--text-3); text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="ccc-head">
+    <div>
+      <p class="ccc-title">Embudo de propuestas — Click+Clack</p>
+      <p class="ccc-sub">Cada punto es una oportunidad. El color indica el canal de origen. Snapshot del <span id="ccc-snapdate">—</span>.</p>
+    </div>
+    <div class="ccc-controls"><span id="ccc-count"></span></div>
+  </div>
+  <div class="ccc-legend" id="ccc-legend"></div>
+  <p class="ccc-section-h">Embudo activo</p>
+  <div class="ccc-grid ccc-funnel" id="ccc-funnel"></div>
+  <p class="ccc-section-h">Estados terminales</p>
+  <div class="ccc-grid ccc-terminal" id="ccc-terminal"></div>
+  <p class="ccc-foot">Click+Clack · pasa el cursor sobre cualquier punto para ver detalles · clic en la leyenda para filtrar por canal</p>
+</div>
+<div class="ccc-tip" id="ccc-tip"></div>
+
+<script type="application/json" id="ccc-data">{"snapshot_date":"2026-04-15","leads":[{"id":"Expertise France||Proyecto MERA (Cali y Quito)","cliente":"Expertise France","titulo":"Proyecto MERA (Cali y Quito)","stage":"Desistida","canal":"Asociados","tipo":"RFP","responsable":"Viviana","usd":70343.21269952948,"fecha_registro":"2026-04-10","fecha_cierre":null,"pais":"Colombia","tema":"Género"},{"id":"MINEDUCYT||Libros Primera Inancia Adaptación Discapacidad Visual","cliente":"MINEDUCYT","titulo":"Libros Primera Inancia Adaptación Discapacidad Visual","stage":"2 - Pre-selección (lista corta)","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"Viviana","usd":null,"fecha_registro":"2026-04-10","fecha_cierre":null,"pais":"El Salvador","tema":"Discapacidad"},{"id":"Organización Corporación Infancia y Desarrollo ||Cotización de materiales lúdicos","cliente":"Organización Corporación Infancia y Desarrollo","titulo":"Cotización de materiales lúdicos","stage":"3 - En formulación","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"Juan Jose","usd":0.0,"fecha_registro":"2026-04-10","fecha_cierre":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"OEI México - SEMARNAT||Formación digital docente ambiental SEMARNAT ","cliente":"OEI México - SEMARNAT","titulo":"Formación digital docente ambiental SEMARNAT","stage":"1 - Oportunidad identificada","canal":"Asociados","tipo":"RFP","responsable":"Vivi","usd":70343.21269952948,"fecha_registro":"2026-03-24","fecha_cierre":null,"pais":"","tema":""},{"id":"MINEDUCYT||El Salvador Materiales Discapacidad Auditiva","cliente":"MINEDUCYT","titulo":"El Salvador Materiales Discapacidad Auditiva","stage":"2 - Pre-selección (lista corta)","canal":"Contacto directo","tipo":"Licitación Pública","responsable":"Juan Jose","usd":null,"fecha_registro":"2026-03-24","fecha_cierre":null,"pais":"El Salvador","tema":"Inclusión Social"},{"id":"CNMH||Reproducción de la exhibición “Voces para transformar a Colombia","cliente":"CNMH","titulo":"Reproducción de la exhibición “Voces para transformar a Colombia","stage":"3 - En formulación","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"Juan Jose","usd":null,"fecha_registro":"2026-03-09","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"Libreria Tintea||Envío de muestras para colegios y cajas de compensación","cliente":"Libreria Tintea","titulo":"Envío de muestras para colegios y cajas de compensación","stage":"1 - Oportunidad identificada","canal":"Recompra","tipo":"Cotización Stock","responsable":"Aleja","usd":null,"fecha_registro":"2026-03-06","fecha_cierre":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"Unicef Honduras||Kits Semillero del Cuidado - Honduras","cliente":"Unicef Honduras","titulo":"Kits Semillero del Cuidado - Honduras","stage":"5 - Negociación","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Juan Jose","usd":14577.0,"fecha_registro":"2026-01-30","fecha_cierre":null,"pais":"Honduras","tema":"Primera Infancia"},{"id":"FUNDACIÓN DECAMERON||Decamerón - Materiales cotización+ Transferencia para barranquilla ","cliente":"FUNDACIÓN DECAMERON","titulo":"Decamerón - Materiales cotización+ Transferencia para barranquilla","stage":"5 - Negociación","canal":"Recompra","tipo":"Cotización Stock","responsable":"Aleja","usd":2487.5,"fecha_registro":"2026-01-22","fecha_cierre":null,"pais":"","tema":""},{"id":"BID Colombia||BID Aulas Inclusivas 2026","cliente":"BID Colombia","titulo":"BID Aulas Inclusivas 2026","stage":"5 - Negociación","canal":"Recompra","tipo":"RFP","responsable":"Juanjo","usd":82885.0,"fecha_registro":"2026-01-19","fecha_cierre":null,"pais":"Colombia","tema":"Cohesión Social"},{"id":"UNICEF El Salvador||UNICEF - CONAPINA - Currículo Familiar","cliente":"UNICEF El Salvador","titulo":"UNICEF - CONAPINA - Currículo Familiar","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"RFP","responsable":"Viviana","usd":83113.0,"fecha_registro":"2026-01-19","fecha_cierre":null,"pais":"El Salvador","tema":"Protección NN"},{"id":"United Way Barranquilla||Venta de juegos Crecer Jugando","cliente":"United Way Barranquilla","titulo":"Venta de juegos Crecer Jugando","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","tipo":"Cotización Stock","responsable":"Juan Jose","usd":null,"fecha_registro":"2026-03-26","fecha_cierre":null,"pais":"","tema":""},{"id":"SED||Fortalecimiento de la Atención Integral a la Primera Infancia en 120 Colegios de Bogotá","cliente":"SED","titulo":"Fortalecimiento de la Atención Integral a la Primera Infancia en 120 Colegios de Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","tipo":"IP","responsable":"Viviana","usd":null,"fecha_registro":"2026-03-02","fecha_cierre":null,"pais":"","tema":""},{"id":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ||Kits de Apoyo emocional - SED Bogotá","cliente":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ","titulo":"Kits de Apoyo emocional - SED Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","tipo":"IP","responsable":"Viviana","usd":125000.0,"fecha_registro":"2026-02-23","fecha_cierre":null,"pais":"Colombia","tema":"HSE"},{"id":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ||Trayectorias Educativas Escuelas con Emociones - SED Bogotá","cliente":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ","titulo":"Trayectorias Educativas Escuelas con Emociones - SED Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","tipo":"IP","responsable":"Vivi","usd":null,"fecha_registro":"2026-02-23","fecha_cierre":null,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"Unicef Honduras||Adenda Eduhcafe","cliente":"Unicef Honduras","titulo":"Adenda Eduhcafe","stage":"3 - En formulación","canal":"Recompra","tipo":"RFP","responsable":"Juanjo","usd":null,"fecha_registro":"2026-02-19","fecha_cierre":null,"pais":"","tema":""},{"id":"HundreED||Global Collection 2027","cliente":"HundreED","titulo":"Global Collection 2027","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","tipo":"Grant","responsable":"Juan Jose","usd":null,"fecha_registro":"2026-02-13","fecha_cierre":null,"pais":"","tema":""},{"id":"Estratégica Comunicaciones||MEN - Venta 775 libro \"Conferencia de los pájaros\"","cliente":"Estratégica Comunicaciones","titulo":"MEN - Venta 775 libro \"Conferencia de los pájaros\"","stage":"Sin respuesta","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Juanjo","usd":10265.06875,"fecha_registro":"2026-02-03","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"FAO||FAO - Somos el Bosque Caja Herramientas","cliente":"FAO","titulo":"FAO - Somos el Bosque Caja Herramientas","stage":"4 - Propuesta enviada","canal":"Recomendados","tipo":"Cotización Stock","responsable":"Aleja, Maleja","usd":12604.86275,"fecha_registro":"2025-11-12","fecha_cierre":null,"pais":"Colombia","tema":"Educación ambiental"},{"id":"CAPS & CISCO||Proyecto RSE con CISCO","cliente":"CAPS & CISCO","titulo":"Proyecto RSE con CISCO","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","tipo":"RFP","responsable":"J, E","usd":null,"fecha_registro":"2025-11-13","fecha_cierre":null,"pais":"","tema":""},{"id":"Vanti ||Vanti - Operador Acción Social","cliente":"Vanti","titulo":"Vanti - Operador Acción Social","stage":"4 - Propuesta enviada","canal":"Contacto directo","tipo":"RFP","responsable":"Vivi","usd":237581.05275,"fecha_registro":"2026-02-18","fecha_cierre":null,"pais":"Colombia","tema":"Responsabilidad Social Empresarial"},{"id":"BRITISH COUNCIL||Diseño del Currículo de Inglés de Barranquilla","cliente":"BRITISH COUNCIL","titulo":"Diseño del Currículo de Inglés de Barranquilla","stage":"Perdida","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"Juanjo","usd":48219.4285,"fecha_registro":"2026-03-19","fecha_cierre":"2026-04-09","pais":"Colombia","tema":""},{"id":"United way Colombia||Libro de socialización investigaciones","cliente":"United way Colombia","titulo":"Libro de socialización investigaciones","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","tipo":"Cotización Personalizada","responsable":"Juan Jose","usd":null,"fecha_registro":"2026-03-30","fecha_cierre":null,"pais":"Colombia","tema":"Investigación"},{"id":"MINEDUCYT||MINEDUCYT - Transformación Digital","cliente":"MINEDUCYT","titulo":"MINEDUCYT - Transformación Digital","stage":"2 - Pre-selección (lista corta)","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"Vivi","usd":null,"fecha_registro":"2026-02-18","fecha_cierre":null,"pais":"El Salvador","tema":"Educación Digital"},{"id":"SED Bogotá||SED Bogotá - Trayectorias Educativas y OSO JcP","cliente":"SED Bogotá","titulo":"SED Bogotá - Trayectorias Educativas y OSO JcP","stage":"4 - Propuesta enviada","canal":"Asociados","tipo":"Licitación Pública","responsable":"Emmanuel","usd":119282.16554594999,"fecha_registro":"2025-11-18","fecha_cierre":"2026-04-01","pais":"Colombia","tema":"Trayectorias educativas"},{"id":"MINISTERIO DE CULTURA - El Salvador||Impresión de libros de la series Semilla y Maquilishuat I","cliente":"MINISTERIO DE CULTURA - El Salvador","titulo":"Impresión de libros de la series Semilla y Maquilishuat I","stage":"4 - Propuesta enviada","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"Vivi","usd":123665.10300000002,"fecha_registro":"2026-03-26","fecha_cierre":null,"pais":"El Salvador","tema":"Primera Infancia"},{"id":"Busca libre||Alianza distribución","cliente":"Busca libre","titulo":"Alianza distribución","stage":"6 - Ganada","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Aleja","usd":null,"fecha_registro":"2026-02-13","fecha_cierre":"2026-04-07","pais":"","tema":""},{"id":"COLSUBSIDIO||Formación Colsubsidio","cliente":"COLSUBSIDIO","titulo":"Formación Colsubsidio","stage":"4 - Propuesta enviada","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"Aleja-Vivi","usd":13499.4445,"fecha_registro":"2026-03-31","fecha_cierre":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"GOBERNACION DE CUNDINAMARCA - SECRETARIA DE LA MUJER Y EQUIDAD DE GENERO||DESARROLLO DE LA ESTRATEGIA DIGNIDAD MENSTRUAL - MUJERES DE CUNDINAMARCA","cliente":"GOBERNACION DE CUNDINAMARCA - SECRETARIA DE LA MUJER Y EQUIDAD DE GENERO","titulo":"DESARROLLO DE LA ESTRATEGIA DIGNIDAD MENSTRUAL - MUJERES DE CUNDINAMARCA","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"Vivi /Aleja","usd":null,"fecha_registro":"2026-03-05","fecha_cierre":null,"pais":"Colombia","tema":"Género"},{"id":"ARN||Estrategia de Prevención y Superación de la Estigmatización de personas en proceso de reincorporación","cliente":"ARN","titulo":"Estrategia de Prevención y Superación de la Estigmatización de personas en proceso de reincorporación","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"","usd":null,"fecha_registro":"2026-03-02","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"UNICEF Colombia||UNICEF - Estrategia Protección Escuelas","cliente":"UNICEF Colombia","titulo":"UNICEF - Estrategia Protección Escuelas","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"RFP","responsable":"Vivi y Aleja","usd":85920.3035,"fecha_registro":"2026-02-25","fecha_cierre":null,"pais":"Colombia","tema":"Protección NN"},{"id":"BID Bolívia||Promoción Lectura Bolívia rural","cliente":"BID Bolívia","titulo":"Promoción Lectura Bolívia rural","stage":"5 - Negociación","canal":"Contacto directo","tipo":"RFP","responsable":"Vivi","usd":22000.0,"fecha_registro":"2026-01-06","fecha_cierre":null,"pais":"Bolívia","tema":"Lectoescritura"},{"id":"MINEDUCYT||Impresión de Materiales Kit Lectura en Casa","cliente":"MINEDUCYT","titulo":"Impresión de Materiales Kit Lectura en Casa","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"Emmanuel","usd":1051676.405,"fecha_registro":"2026-01-19","fecha_cierre":null,"pais":"El Salvador","tema":"Educación NN"},{"id":"Fondo Acción||Estrategia de sensibilización y generación de capacidades sobre Sistemas de\nComercio de Emisiones","cliente":"Fondo Acción","titulo":"Estrategia de sensibilización y generación de capacidades sobre Sistemas de\nComercio de Emisiones","stage":"2 - Pre-selección (lista corta)","canal":"Asociados","tipo":"RFP","responsable":"Vivi, Juanjo","usd":null,"fecha_registro":"2026-02-25","fecha_cierre":null,"pais":"Colombia","tema":"Educación ambiental"},{"id":"Panamericana||Conferencia de los Pájaros 611 und","cliente":"Panamericana","titulo":"Conferencia de los Pájaros 611 und","stage":"4 - Propuesta enviada","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Aleja","usd":8719.135135135135,"fecha_registro":"2026-03-27","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"COLSUBSIDIO||Evento Colsubsidio","cliente":"COLSUBSIDIO","titulo":"Evento Colsubsidio","stage":"Desistida","canal":"Contacto directo","tipo":"Cotización Personalizada","responsable":"","usd":12500.0,"fecha_registro":"2026-03-26","fecha_cierre":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"CAMARA DE COMERCIO DE BOGOTA D.C.||Programa de Emprendimiento para Colegios de la CCB","cliente":"CAMARA DE COMERCIO DE BOGOTA D.C.","titulo":"Programa de Emprendimiento para Colegios de la CCB","stage":"Perdida","canal":"Oportunidad abierta","tipo":"RFP","responsable":"Vivi","usd":151026.54075,"fecha_registro":"2026-03-06","fecha_cierre":null,"pais":"","tema":""},{"id":"ALDEAS INFANTILES SOS||Aldeas Infantiles - Redes de Cuidado_Caja Heramientas ICBF","cliente":"ALDEAS INFANTILES SOS","titulo":"Aldeas Infantiles - Redes de Cuidado_Caja Heramientas ICBF","stage":"6 - Ganada","canal":"Recomendados","tipo":"RFP","responsable":"Juan José","usd":20000.0,"fecha_registro":"2025-11-13","fecha_cierre":"2025-12-12","pais":"Colombia","tema":"Protección NN"},{"id":"OEI Panamá - Ministerio de Educación de Panamá||OEI Panamá 002 - Bajo desempeño 200 centros","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 002 - Bajo desempeño 200 centros","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"Vivi","usd":350000.0,"fecha_registro":"2025-08-15","fecha_cierre":null,"pais":"Panamá","tema":"Fortalecimiento de capacidades"},{"id":"UNICEF Colombia||Generación verde Pacífico","cliente":"UNICEF Colombia","titulo":"Generación verde Pacífico","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"IP","responsable":"Aleja, Vivi","usd":600000.0,"fecha_registro":"2026-01-20","fecha_cierre":null,"pais":"Colombia","tema":"Educación ambiental"},{"id":"Secretaria de Educación de Antioquia - Corporación Interuniversitaria de servicios -CIS||Programa ALFA - Gob Antioquia / CIS","cliente":"Secretaria de Educación de Antioquia - Corporación Interuniversitaria de servicios -CIS","titulo":"Programa ALFA - Gob Antioquia / CIS","stage":"6 - Ganada","canal":"Gestión comercial","tipo":"Licitación Pública","responsable":"Vivi","usd":437051.949625,"fecha_registro":"2025-12-12","fecha_cierre":null,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"OEI Panamá - Ministerio de Educación de Panamá||OEI Panamá 007 - Dispositivos + Inclusión","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 007 - Dispositivos + Inclusión","stage":"Perdida","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"Vivi, Aleja, Juanjo","usd":125000.0,"fecha_registro":"2025-07-28","fecha_cierre":null,"pais":"Panamá","tema":"Inclusión Social"},{"id":"UNICEF Colombia||UNICEF SI-Fortalecimiento Protección 12 IEs","cliente":"UNICEF Colombia","titulo":"UNICEF SI-Fortalecimiento Protección 12 IEs","stage":"Desistida","canal":"Oportunidad abierta","tipo":"IP","responsable":"Vivi y Aleja","usd":350000.0,"fecha_registro":"2026-02-25","fecha_cierre":null,"pais":"Colombia","tema":"Protección NN"},{"id":"Tinker||Tinker - OEI y SED Chiapas Diagnostico","cliente":"Tinker","titulo":"Tinker - OEI y SED Chiapas Diagnostico","stage":"No preseleccionada","canal":"Gestión comercial","tipo":"Grant","responsable":"Vivi","usd":150000.0,"fecha_registro":"2025-11-10","fecha_cierre":"2026-02-23","pais":"México","tema":"Trayectorias educativas"},{"id":"Organización Corporación Infancia y Desarrollo ||Compra de materiales","cliente":"Organización Corporación Infancia y Desarrollo","titulo":"Compra de materiales","stage":"Perdida","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Juanjo Aleja","usd":null,"fecha_registro":"2026-02-13","fecha_cierre":null,"pais":"","tema":""},{"id":"Biblioteca Nacional||Premio Incentivo Bologna Fair","cliente":"Biblioteca Nacional","titulo":"Premio Incentivo Bologna Fair","stage":"Perdida","canal":"Oportunidad abierta","tipo":"Grant","responsable":"Juanjo","usd":2250.0,"fecha_registro":"2026-01-29","fecha_cierre":null,"pais":"Colombia","tema":"Educación NN"},{"id":"Libreria Tintea||Tintea - Compra de materiales","cliente":"Libreria Tintea","titulo":"Tintea - Compra de materiales","stage":"Perdida","canal":"Recompra","tipo":"Cotización Stock","responsable":"Aleja","usd":103.75,"fecha_registro":"2025-11-28","fecha_cierre":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"Futbol con Corazón||FCC - Salud mental jóvenes - HSE","cliente":"Futbol con Corazón","titulo":"FCC - Salud mental jóvenes - HSE","stage":"Desistida","canal":"Gestión comercial","tipo":"Cotización Personalizada","responsable":"Juan Jose","usd":null,"fecha_registro":"2025-11-28","fecha_cierre":null,"pais":"","tema":""},{"id":"El Salvador Materiales||Materiales El Salvador 2","cliente":"El Salvador Materiales","titulo":"Materiales El Salvador 2","stage":"Desistida","canal":"Recomendados","tipo":"Licitación Pública","responsable":"Anas, Vivi","usd":null,"fecha_registro":"2025-11-10","fecha_cierre":null,"pais":"","tema":""},{"id":"Colegio Campestre San josé||Envío brochure para posible compra de materiales","cliente":"Colegio Campestre San josé","titulo":"Envío brochure para posible compra de materiales","stage":"Sin respuesta","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Aleja","usd":null,"fecha_registro":"2026-02-06","fecha_cierre":null,"pais":"","tema":""},{"id":"Manos unidas||Venta juego memociones","cliente":"Manos unidas","titulo":"Venta juego memociones","stage":"Sin respuesta","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Aleja","usd":null,"fecha_registro":"2026-02-04","fecha_cierre":null,"pais":"","tema":""},{"id":"Innova Schools||Innova - Suministro materiales (nuevas sedes)","cliente":"Innova Schools","titulo":"Innova - Suministro materiales (nuevas sedes)","stage":"6 - Ganada","canal":"Recompra","tipo":"Cotización Stock","responsable":"Aleja","usd":886.0,"fecha_registro":"2026-01-15","fecha_cierre":null,"pais":"Colombia","tema":"ESI"},{"id":"Orlando Salcedo||Cotización Material Pedagógico","cliente":"Orlando Salcedo","titulo":"Cotización Material Pedagógico","stage":"Sin respuesta","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Juanjo","usd":null,"fecha_registro":"2026-01-21","fecha_cierre":null,"pais":"","tema":""},{"id":"CRUZ ROJA||Cruz Roja - 077-2025-Museo Itinerante","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 077-2025-Museo Itinerante","stage":"6 - Ganada","canal":"Asociados","tipo":"Licitación Pública","responsable":"Aleja","usd":44394.02678571429,"fecha_registro":"2025-12-11","fecha_cierre":null,"pais":"Colombia","tema":""},{"id":"Erasmus // Santa Isabel||Participación Asocio FSI - Convocatoria Erasmus 2026","cliente":"Erasmus // Santa Isabel","titulo":"Participación Asocio FSI - Convocatoria Erasmus 2026","stage":"Desistida","canal":"Recomendados","tipo":"Grant","responsable":"Juanjo","usd":null,"fecha_registro":"2026-01-23","fecha_cierre":null,"pais":"","tema":""},{"id":"Cruz Roja - TDD||Concurso narrativas + maletas gestión del riesgo","cliente":"Cruz Roja - TDD","titulo":"Concurso narrativas + maletas gestión del riesgo","stage":"6 - Ganada","canal":"Asociados","tipo":"RFP","responsable":"Juanjo","usd":45000.0,"fecha_registro":"2026-02-04","fecha_cierre":null,"pais":"Colombia","tema":"Museología"},{"id":"CRUZ ROJA||Dotación Espacios Emergencia NNA_GLI730","cliente":"CRUZ ROJA","titulo":"Dotación Espacios Emergencia NNA_GLI730","stage":"6 - Ganada","canal":"Recomendados","tipo":"Cotización Stock","responsable":"Vivi","usd":609.5,"fecha_registro":"2025-12-15","fecha_cierre":null,"pais":"Colombia","tema":"Emergencias"},{"id":"Yanacá||Lici - Cotización 12mil Enriques","cliente":"Yanacá","titulo":"Lici - Cotización 12mil Enriques","stage":"Sin respuesta","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Aleja","usd":74970.0,"fecha_registro":"2026-01-20","fecha_cierre":null,"pais":"","tema":""},{"id":"SCALEDEM||SCALEDEM – Piloting Programme Call","cliente":"SCALEDEM","titulo":"SCALEDEM – Piloting Programme Call","stage":"Desistida","canal":"Oportunidad abierta","tipo":"Grant","responsable":"Emmanuel","usd":null,"fecha_registro":"2026-01-15","fecha_cierre":null,"pais":"","tema":""},{"id":"Jugando Aprendemos||Lici - Cotización 12mil Enriques","cliente":"Jugando Aprendemos","titulo":"Lici - Cotización 12mil Enriques","stage":"Sin respuesta","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Emmanuel","usd":74970.0,"fecha_registro":"2026-01-15","fecha_cierre":null,"pais":"Colombia","tema":"HSE"},{"id":"Global opportunity\nyouth - GOYN||Prospecto para trabajo con Jóvenes y Fundación Corona","cliente":"Global opportunity\nyouth - GOYN","titulo":"Prospecto para trabajo con Jóvenes y Fundación Corona","stage":"Sin respuesta","canal":"Gestión comercial","tipo":"MOU/ Acuerdo","responsable":"Juan Jose","usd":null,"fecha_registro":"2026-01-15","fecha_cierre":null,"pais":"","tema":""},{"id":"Corventas de Colombia SAS||Cotización materiales dotación Cruz Roja","cliente":"Corventas de Colombia SAS","titulo":"Cotización materiales dotación Cruz Roja","stage":"Perdida","canal":"Contacto directo","tipo":"Cotización Stock","responsable":"Aleja","usd":609.5,"fecha_registro":"2025-12-17","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"UNESCO||UNESCO-Hamdan Prize for Teacher Development","cliente":"UNESCO","titulo":"UNESCO-Hamdan Prize for Teacher Development","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","tipo":"Grant","responsable":"Vivi","usd":100000.0,"fecha_registro":"2025-12-12","fecha_cierre":null,"pais":"Colombia","tema":"Formación Docente"},{"id":"Fundalectura||Cotiz. Fundalectura - 1 Guerra a Voces","cliente":"Fundalectura","titulo":"Cotiz. Fundalectura - 1 Guerra a Voces","stage":"Perdida","canal":"Recompra","tipo":"Cotización Stock","responsable":"Aleja","usd":16.25,"fecha_registro":"2025-12-04","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"Innova Schools||Proyecto EIS Innova Schools","cliente":"Innova Schools","titulo":"Proyecto EIS Innova Schools","stage":"Desistida","canal":"Recompra","tipo":"Cotización Personalizada","responsable":"Aleja y Juanjo","usd":null,"fecha_registro":"2025-10-27","fecha_cierre":null,"pais":"Colombia","tema":"ESI"},{"id":"United Way Honduras||Presentación proyectos con United Way","cliente":"United Way Honduras","titulo":"Presentación proyectos con United Way","stage":"Desistida","canal":"Gestión comercial","tipo":"Cotización Personalizada","responsable":"Juan Jose","usd":300000.0,"fecha_registro":"2025-09-01","fecha_cierre":null,"pais":"Honduras","tema":""},{"id":"UNICEF Colombia||Fortalecimiento Estrt. Pedagógicas","cliente":"UNICEF Colombia","titulo":"Fortalecimiento Estrt. Pedagógicas","stage":"Desistida","canal":"Oportunidad abierta","tipo":"IP","responsable":"","usd":null,"fecha_registro":"2026-01-19","fecha_cierre":null,"pais":"","tema":""},{"id":"UNICEF Colombia||Plataforma Digital IA Violencia NN","cliente":"UNICEF Colombia","titulo":"Plataforma Digital IA Violencia NN","stage":"Desistida","canal":"Oportunidad abierta","tipo":"RFP","responsable":"","usd":null,"fecha_registro":"2026-01-19","fecha_cierre":null,"pais":"","tema":""},{"id":"OEI Panamá - Ministerio de Educación de Panamá||OEI Panamá 006 - Dispositivos + Bajo desempeño 200","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 006 - Dispositivos + Bajo desempeño 200","stage":"Desistida","canal":"Oportunidad abierta","tipo":"Licitación Pública","responsable":"Vivi","usd":700000.0,"fecha_registro":"2025-07-28","fecha_cierre":null,"pais":"Panamá","tema":"Trayectorias educativas"},{"id":"UNODC Colombia||UNODC - Justicia Restaurativa","cliente":"UNODC Colombia","titulo":"UNODC - Justicia Restaurativa","stage":"Perdida","canal":"Recompra","tipo":"RFP","responsable":"Aleja, Emmnauel","usd":13250.0,"fecha_registro":"2025-11-12","fecha_cierre":"2026-01-15","pais":"Colombia","tema":"Inclusión Social"},{"id":"Fundalectura||Fundalectura - Convocatoria 2025 Bibliotecas Públicas y Rurales","cliente":"Fundalectura","titulo":"Fundalectura - Convocatoria 2025 Bibliotecas Públicas y Rurales","stage":"Perdida","canal":"Recomendados","tipo":"Cotización Stock","responsable":"Aleja","usd":null,"fecha_registro":"2025-10-01","fecha_cierre":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"CRUZ ROJA||Cruz Roja - 075-2025-Metaverso VR-RA","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 075-2025-Metaverso VR-RA","stage":"Desistida","canal":"Asociados","tipo":"Licitación Pública","responsable":"Vivi, juanjo","usd":160797.8775,"fecha_registro":"2025-06-03","fecha_cierre":null,"pais":"Colombia","tema":"Museología"}]}</script>
+<script>
+(function(){
+  const FUNNEL = [
+    {key:'1 - Oportunidad identificada', short:'Oportunidad', n:1},
+    {key:'2 - Pre-selección (lista corta)', short:'Pre-selección', n:2},
+    {key:'3 - En formulación', short:'En formulación', n:3},
+    {key:'4 - Propuesta enviada', short:'Enviada', n:4},
+    {key:'5 - Negociación', short:'Negociación', n:5},
+    {key:'6 - Ganada', short:'Ganada', n:6},
+  ];
+  const TERMINAL = [
+    {key:'Perdida', short:'Perdida'},
+    {key:'Desistida', short:'Desistida'},
+    {key:'Sin respuesta', short:'Sin respuesta'},
+    {key:'No preseleccionada', short:'No preseleccionada'},
+  ];
+  const CANAL_COLORS = {
+    'Oportunidad abierta':'#7F77DD','Gestión comercial':'#1D9E75','Recompra':'#D85A30',
+    'Contacto directo':'#378ADD','Recomendados':'#D4537E','Asociados':'#BA7517','Sin clasificar':'#888780',
+  };
+  const SNAP = JSON.parse(document.getElementById('ccc-data').textContent);
+  let activeCanales = new Set(Object.keys(CANAL_COLORS));
+
+  function buildLegend(){
+    const wrap = document.getElementById('ccc-legend');
+    Object.entries(CANAL_COLORS).forEach(([canal, color]) => {
+      if (!SNAP.leads.some(l => l.canal === canal)) return;
+      const el = document.createElement('div');
+      el.className = 'ccc-lg-item';
+      el.innerHTML = '<span class="ccc-lg-dot" style="background:'+color+'"></span><span>'+canal+'</span>';
+      el.addEventListener('click', () => {
+        if (activeCanales.has(canal)) activeCanales.delete(canal); else activeCanales.add(canal);
+        if (activeCanales.size === 0) activeCanales = new Set(Object.keys(CANAL_COLORS));
+        el.classList.toggle('off', !activeCanales.has(canal));
+        render();
+      });
+      wrap.appendChild(el);
+    });
+  }
+
+  const tipEl = () => document.getElementById('ccc-tip');
+  function showTip(html, x, y){
+    const t = tipEl(); t.innerHTML = html; t.classList.add('on');
+    const r = t.getBoundingClientRect();
+    let lx = x + 12, ly = y + 12;
+    if (lx + r.width > window.innerWidth - 8) lx = x - r.width - 12;
+    if (ly + r.height > window.innerHeight - 8) ly = y - r.height - 12;
+    t.style.left = lx + 'px'; t.style.top = ly + 'px';
+  }
+  function hideTip(){ tipEl().classList.remove('on'); }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function buildTipHtml(l){
+    const usd = l.usd != null ? '$' + Math.round(l.usd).toLocaleString('en-US') + ' USD' : 'Sin valor';
+    const meta = [esc(l.canal), usd];
+    if (l.responsable) meta.push(esc(l.responsable));
+    if (l.pais) meta.push(esc(l.pais));
+    return '<div class="ccc-tip-t">' + esc(l.cliente) + '</div>' +
+      '<div class="ccc-tip-r">' + esc(l.titulo || '(sin título)') + '</div>' +
+      '<div class="ccc-tip-r" style="margin-top:4px"><b style="color:'+CANAL_COLORS[l.canal]+'">●</b> ' + meta.join(' · ') + '</div>';
+  }
+
+  function buildColumn(stage, leads, isTerminal){
+    const inStage = leads.filter(l => l.stage === stage.key);
+    const visible = inStage.filter(l => activeCanales.has(l.canal));
+    const col = document.createElement('div');
+    col.className = 'ccc-col' + (isTerminal ? ' terminal' : '');
+    const sub = inStage.length !== visible.length
+      ? ' <span style="font-size:11px;color:var(--text-3);font-weight:400">de '+inStage.length+'</span>' : '';
+    const label = isTerminal ? stage.short : (stage.n + '. ' + stage.short);
+    col.innerHTML =
+      '<div class="ccc-col-h">' + label + '</div>' +
+      '<div class="ccc-col-c">' + visible.length + sub + '</div>' +
+      '<div class="ccc-dots"></div>';
+    const dots = col.querySelector('.ccc-dots');
+    inStage.forEach(l => {
+      const d = document.createElement('div');
+      d.className = 'ccc-dot' + (isTerminal ? ' terminal' : '') + (activeCanales.has(l.canal) ? '' : ' dim');
+      d.style.background = CANAL_COLORS[l.canal] || CANAL_COLORS['Sin clasificar'];
+      d.addEventListener('mouseenter', e => showTip(buildTipHtml(l), e.clientX, e.clientY));
+      d.addEventListener('mousemove', e => showTip(tipEl().innerHTML, e.clientX, e.clientY));
+      d.addEventListener('mouseleave', hideTip);
+      dots.appendChild(d);
+    });
+    return col;
+  }
+
+  function render(){
+    const leads = SNAP.leads;
+    const fwrap = document.getElementById('ccc-funnel');
+    fwrap.innerHTML = '';
+    FUNNEL.forEach(stage => fwrap.appendChild(buildColumn(stage, leads, false)));
+    const twrap = document.getElementById('ccc-terminal');
+    twrap.innerHTML = '';
+    TERMINAL.forEach(stage => twrap.appendChild(buildColumn(stage, leads, true)));
+    const total = leads.filter(l => activeCanales.has(l.canal)).length;
+    document.getElementById('ccc-count').textContent = total + ' propuestas mostradas · ' + leads.length + ' totales';
+    document.getElementById('ccc-snapdate').textContent = SNAP.snapshot_date;
+  }
+  buildLegend();
+  render();
+})();
+</script>
+</body>
+</html>
