@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#fafaf7;--surface:#fff;--surface-2:#f1efe8;--text-1:#2c2c2a;--text-2:#5f5e5a;--text-3:#888780;--border-1:rgba(0,0,0,.08);--border-2:rgba(0,0,0,.18);--r:8px;--rl:12px}
+  :root{--bg:#fafaf7;--surface:#fff;--surface-2:#f1efe8;--text-1:#2c2c2a;--text-2:#5f5e5a;--text-3:#888780;--border-1:rgba(0,0,0,.08);--border-2:rgba(0,0,0,.18);--r:8px}
   @media(prefers-color-scheme:dark){:root{--bg:#1a1a18;--surface:#242422;--surface-2:#2c2c2a;--text-1:#f1efe8;--text-2:#b4b2a9;--text-3:#888780;--border-1:rgba(255,255,255,.08);--border-2:rgba(255,255,255,.18)}}
   *{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased}
   .page{max-width:1280px;margin:0 auto;padding:32px 24px 64px}
@@ -17,18 +17,24 @@
   .hd-sub{font-size:13px;color:var(--text-2);margin:4px 0 0}
   .hd-ct{font-size:13px;color:var(--text-2)}
   .sh{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;font-weight:500}
-  .gr{display:grid;gap:6px;margin-bottom:1.5rem}
+  /* Each section (funnel, terminal) is a positioning context for its dots overlay */
+  .section{position:relative;margin-bottom:1.5rem}
+  .gr{display:grid;gap:6px}
   .gr-f{grid-template-columns:repeat(6,minmax(0,1fr))}
   .gr-t{grid-template-columns:repeat(4,minmax(0,1fr))}
   @media(max-width:700px){.gr-f{grid-template-columns:repeat(3,minmax(0,1fr))}.gr-t{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  .cl{background:var(--surface-2);border-radius:var(--r);padding:10px 8px;min-height:200px;display:flex;flex-direction:column}
+  .cl{background:var(--surface-2);border-radius:var(--r);padding:10px 8px;min-height:200px;display:flex;flex-direction:column;overflow:visible}
   .cl.tm{min-height:140px}
   .cl-h{font-size:11px;color:var(--text-2);margin-bottom:2px;line-height:1.3;min-height:28px}
-  .cl-c{font-size:20px;font-weight:500;margin-bottom:8px}
-  .ds{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;flex:1}
-  .dt{width:11px;height:11px;border-radius:50%;cursor:pointer;transition:transform .15s,box-shadow .15s}
-  .dt:hover{transform:scale(1.6);box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--border-2);z-index:2;position:relative}
+  .cl-c{font-size:20px;font-weight:500;margin-bottom:8px;transition:color .3s}
+  .ds{flex:1;min-height:40px;position:relative}
+  /* Overlay: absolute layer above the grid that holds all dots */
+  .overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+  .dt{position:absolute;width:11px;height:11px;border-radius:50%;cursor:pointer;pointer-events:auto;transition:left .65s cubic-bezier(.5,0,.1,1),top .65s cubic-bezier(.5,0,.1,1),opacity .45s ease,transform .15s ease,box-shadow .15s ease;will-change:left,top}
+  .dt:hover{transform:scale(1.6);box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--border-2);z-index:10}
   .dt.dm{opacity:.18}.dt.tm{opacity:.55}.dt.tm:hover{opacity:1}.dt.tm.dm{opacity:.12}
+  .dt.entering{opacity:0;transform:scale(.3)}
+  .dt.leaving{opacity:0;transform:scale(.3);pointer-events:none}
   .lg{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-2);margin-bottom:1rem;align-items:center}
   .li{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:2px 6px;border-radius:var(--r)}
   .li:hover{background:var(--surface-2)}.li.off{opacity:.4}
@@ -39,7 +45,9 @@
   .tp-r{color:var(--text-2);font-size:11px;line-height:1.4}
   .sl{background:var(--surface-2);border-radius:var(--r);padding:12px 14px;display:flex;gap:14px;align-items:center;font-size:13px;flex-wrap:wrap;margin-bottom:1.5rem}
   .sl label{color:var(--text-2)}.sl input[type=range]{flex:1;min-width:140px}
-  .sl-v{font-weight:500;min-width:90px;text-align:right}
+  .sl-v{font-weight:500;min-width:100px;text-align:right}
+  .sl-b{background:none;border:.5px solid var(--border-2);border-radius:var(--r);padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text-2);font-family:inherit}
+  .sl-b:hover{background:var(--surface)}
   .ft{margin-top:32px;font-size:11px;color:var(--text-3);text-align:center}
 </style>
 </head>
@@ -53,13 +61,24 @@
     <div class="hd-ct"><span id="ct"></span></div>
   </div>
   <div class="lg" id="lg"></div>
+
   <p class="sh">Embudo activo</p>
-  <div class="gr gr-f" id="fn"></div>
+  <div class="section" id="sec-f">
+    <div class="gr gr-f" id="fn"></div>
+    <div class="overlay" id="ov-f"></div>
+  </div>
+
   <p class="sh">Estados terminales</p>
-  <div class="gr gr-t" id="tm"></div>
+  <div class="section" id="sec-t">
+    <div class="gr gr-t" id="tm"></div>
+    <div class="overlay" id="ov-t"></div>
+  </div>
+
   <div class="sl" id="sl" style="display:none">
-    <label>Semana:</label>
+    <button class="sl-b" id="sb-prev" title="Semana anterior">←</button>
     <input type="range" id="sr" min="0" max="0" value="0" step="1" />
+    <button class="sl-b" id="sb-next" title="Semana siguiente">→</button>
+    <button class="sl-b" id="sb-play" title="Reproducir evolución">▶ Reproducir</button>
     <span class="sl-v" id="sv">—</span>
   </div>
   <p class="ft">Click+Clack · pasa el cursor sobre cualquier punto para ver detalles · clic en la leyenda para filtrar por canal</p>
@@ -68,31 +87,50 @@
 <script type="application/json" id="dd">[{"snapshot_date":"2026-04-16","leads":[{"id":"73","cliente":"Expertise France","titulo":"Proyecto MERA (Cali y Quito)","stage":"Desistida","canal":"Asociados","responsable":"Viviana","cop":255948000.0,"pais":"Colombia","tema":"Género"},{"id":"72","cliente":"MINEDUCYT","titulo":"Libros Primera Inancia Adaptación Discapacidad Visual","stage":"2 - Pre-selección (lista corta)","canal":"Contacto directo","responsable":"Viviana","cop":null,"pais":"El Salvador","tema":"Discapacidad"},{"id":"71","cliente":"Organización Corporación Infancia y Desarrollo","titulo":"Cotización de materiales lúdicos","stage":"3 - En formulación","canal":"Contacto directo","responsable":"Juan Jose","cop":0.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"70","cliente":"OEI México - SEMARNAT","titulo":"Formación digital docente ambiental SEMARNAT","stage":"1 - Oportunidad identificada","canal":"Asociados","responsable":"Vivi","cop":255948000.0,"pais":"","tema":""},{"id":"69","cliente":"MINEDUCYT","titulo":"El Salvador Materiales Discapacidad Auditiva","stage":"2 - Pre-selección (lista corta)","canal":"Contacto directo","responsable":"Juan Jose","cop":null,"pais":"El Salvador","tema":"Inclusión Social"},{"id":"68","cliente":"CNMH","titulo":"Reproducción de la exhibición “Voces para transformar a Colombia","stage":"3 - En formulación","canal":"Contacto directo","responsable":"Juan Jose","cop":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"67","cliente":"Libreria Tintea","titulo":"Envío de muestras para colegios y cajas de compensación","stage":"1 - Oportunidad identificada","canal":"Recompra","responsable":"Aleja","cop":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"66","cliente":"Unicef Honduras","titulo":"Kits Semillero del Cuidado - Honduras","stage":"5 - Negociación","canal":"Contacto directo","responsable":"Juan Jose","cop":53934900.0,"pais":"Honduras","tema":"Primera Infancia"},{"id":"65","cliente":"FUNDACIÓN DECAMERON","titulo":"Decamerón - Materiales cotización+ Transferencia para barranquilla","stage":"5 - Negociación","canal":"Recompra","responsable":"Aleja","cop":9950000.0,"pais":"","tema":""},{"id":"64","cliente":"BID Colombia","titulo":"BID Aulas Inclusivas 2026","stage":"5 - Negociación","canal":"Recompra","responsable":"Juanjo","cop":306674500.0,"pais":"Colombia","tema":"Cohesión Social"},{"id":"63","cliente":"UNICEF El Salvador","titulo":"UNICEF - CONAPINA - Currículo Familiar","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Viviana","cop":332452000.0,"pais":"El Salvador","tema":"Protección NN"},{"id":"62","cliente":"United Way Barranquilla","titulo":"Venta de juegos Crecer Jugando","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"61","cliente":"SED","titulo":"Fortalecimiento de la Atención Integral a la Primera Infancia en 120 Colegios de Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Viviana","cop":null,"pais":"","tema":""},{"id":"60","cliente":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ","titulo":"Kits de Apoyo emocional - SED Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Viviana","cop":500000000.0,"pais":"Colombia","tema":"HSE"},{"id":"59","cliente":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ","titulo":"Trayectorias Educativas Escuelas con Emociones - SED Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Vivi","cop":null,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"58","cliente":"Unicef Honduras","titulo":"Adenda Eduhcafe","stage":"3 - En formulación","canal":"Recompra","responsable":"Juanjo","cop":null,"pais":"","tema":""},{"id":"57","cliente":"HundreED","titulo":"Global Collection 2027","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"56","cliente":"Estratégica Comunicaciones","titulo":"MEN - Venta 775 libro \"Conferencia de los pájaros\"","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Juanjo","cop":41060275.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"55","cliente":"FAO","titulo":"FAO - Somos el Bosque Caja Herramientas","stage":"4 - Propuesta enviada","canal":"Recomendados","responsable":"Aleja, Maleja","cop":50419451.0,"pais":"Colombia","tema":"Educación ambiental"},{"id":"54","cliente":"CAPS & CISCO","titulo":"Proyecto RSE con CISCO","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","responsable":"J, E","cop":null,"pais":"","tema":""},{"id":"53","cliente":"Vanti","titulo":"Vanti - Operador Acción Social","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Vivi","cop":950324211.0,"pais":"Colombia","tema":"Responsabilidad Social Empresarial"},{"id":"52","cliente":"BRITISH COUNCIL","titulo":"Diseño del Currículo de Inglés de Barranquilla","stage":"Perdida","canal":"Contacto directo","responsable":"Juanjo","cop":192877714.0,"pais":"Colombia","tema":""},{"id":"51","cliente":"United way Colombia","titulo":"Libro de socialización investigaciones","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"Colombia","tema":"Investigación"},{"id":"50","cliente":"MINEDUCYT","titulo":"MINEDUCYT - Transformación Digital","stage":"2 - Pre-selección (lista corta)","canal":"Oportunidad abierta","responsable":"Vivi","cop":null,"pais":"El Salvador","tema":"Educación Digital"},{"id":"49","cliente":"SED Bogotá","titulo":"SED Bogotá - Trayectorias Educativas y OSO JcP","stage":"4 - Propuesta enviada","canal":"Asociados","responsable":"Emmanuel","cop":477128662.1838,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"48","cliente":"MINISTERIO DE CULTURA - El Salvador","titulo":"Impresión de libros de la series Semilla y Maquilishuat I","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Vivi","cop":494660412.00000006,"pais":"El Salvador","tema":"Primera Infancia"},{"id":"47","cliente":"Busca libre","titulo":"Alianza distribución","stage":"6 - Ganada","canal":"Contacto directo","responsable":"Aleja","cop":null,"pais":"","tema":""},{"id":"46","cliente":"COLSUBSIDIO","titulo":"Formación Colsubsidio","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Aleja-Vivi","cop":53997778.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"45","cliente":"GOBERNACION DE CUNDINAMARCA - SECRETARIA DE LA MUJER Y EQUIDAD DE GENERO","titulo":"DESARROLLO DE LA ESTRATEGIA DIGNIDAD MENSTRUAL - MUJERES DE CUNDINAMARCA","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi /Aleja","cop":null,"pais":"Colombia","tema":"Género"},{"id":"44","cliente":"ARN","titulo":"Estrategia de Prevención y Superación de la Estigmatización de personas en proceso de reincorporación","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"","cop":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"43","cliente":"UNICEF Colombia","titulo":"UNICEF - Estrategia Protección Escuelas","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi y Aleja","cop":343681214.0,"pais":"Colombia","tema":"Protección NN"},{"id":"42","cliente":"BID Bolívia","titulo":"Promoción Lectura Bolívia rural","stage":"5 - Negociación","canal":"Contacto directo","responsable":"Vivi","cop":88000000.0,"pais":"Bolívia","tema":"Lectoescritura"},{"id":"41","cliente":"MINEDUCYT","titulo":"Impresión de Materiales Kit Lectura en Casa","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Emmanuel","cop":4206705620.0,"pais":"El Salvador","tema":"Educación NN"},{"id":"40","cliente":"Fondo Acción","titulo":"Estrategia de sensibilización y generación de capacidades sobre Sistemas de\nComercio de Emisiones","stage":"2 - Pre-selección (lista corta)","canal":"Asociados","responsable":"Vivi, Juanjo","cop":null,"pais":"Colombia","tema":"Educación ambiental"},{"id":"39","cliente":"Panamericana","titulo":"Conferencia de los Pájaros 611 und","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Aleja","cop":32260800.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"38","cliente":"COLSUBSIDIO","titulo":"Evento Colsubsidio","stage":"Desistida","canal":"Contacto directo","responsable":"","cop":50000000.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"37","cliente":"CAMARA DE COMERCIO DE BOGOTA D.C.","titulo":"Programa de Emprendimiento para Colegios de la CCB","stage":"Perdida","canal":"Oportunidad abierta","responsable":"Vivi","cop":604106163.0,"pais":"","tema":""},{"id":"36","cliente":"ALDEAS INFANTILES SOS","titulo":"Aldeas Infantiles - Redes de Cuidado_Caja Heramientas ICBF","stage":"6 - Ganada","canal":"Recomendados","responsable":"Juan José","cop":80000000.0,"pais":"Colombia","tema":"Protección NN"},{"id":"35","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 002 - Bajo desempeño 200 centros","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi","cop":1400000000.0,"pais":"Panamá","tema":"Fortalecimiento de capacidades"},{"id":"34","cliente":"UNICEF Colombia","titulo":"Generación verde Pacífico","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Aleja, Vivi","cop":2400000000.0,"pais":"Colombia","tema":"Educación ambiental"},{"id":"33","cliente":"Secretaria de Educación de Antioquia - Corporación Interuniversitaria de servicios -CIS","titulo":"Programa ALFA - Gob Antioquia / CIS","stage":"6 - Ganada","canal":"Gestión comercial","responsable":"Vivi","cop":1748207798.5,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"32","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 007 - Dispositivos + Inclusión","stage":"Perdida","canal":"Oportunidad abierta","responsable":"Vivi, Aleja, Juanjo","cop":500000000.0,"pais":"Panamá","tema":"Inclusión Social"},{"id":"31","cliente":"UNICEF Colombia","titulo":"UNICEF SI-Fortalecimiento Protección 12 IEs","stage":"Desistida","canal":"Oportunidad abierta","responsable":"Vivi y Aleja","cop":1400000000.0,"pais":"Colombia","tema":"Protección NN"},{"id":"30","cliente":"Tinker","titulo":"Tinker - OEI y SED Chiapas Diagnostico","stage":"No preseleccionada","canal":"Gestión comercial","responsable":"Vivi","cop":600000000.0,"pais":"México","tema":"Trayectorias educativas"},{"id":"29","cliente":"Organización Corporación Infancia y Desarrollo","titulo":"Compra de materiales","stage":"Perdida","canal":"Contacto directo","responsable":"Juanjo Aleja","cop":null,"pais":"","tema":""},{"id":"28","cliente":"Biblioteca Nacional","titulo":"Premio Incentivo Bologna Fair","stage":"Perdida","canal":"Oportunidad abierta","responsable":"Juanjo","cop":9000000.0,"pais":"Colombia","tema":"Educación NN"},{"id":"27","cliente":"Libreria Tintea","titulo":"Tintea - Compra de materiales","stage":"Perdida","canal":"Recompra","responsable":"Aleja","cop":415000.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"26","cliente":"Futbol con Corazón","titulo":"FCC - Salud mental jóvenes - HSE","stage":"Desistida","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"25","cliente":"El Salvador Materiales","titulo":"Materiales El Salvador 2","stage":"Desistida","canal":"Recomendados","responsable":"Anas, Vivi","cop":null,"pais":"","tema":""},{"id":"24","cliente":"Colegio Campestre San josé","titulo":"Envío brochure para posible compra de materiales","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Aleja","cop":null,"pais":"","tema":""},{"id":"23","cliente":"Manos unidas","titulo":"Venta juego memociones","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Aleja","cop":null,"pais":"","tema":""},{"id":"22","cliente":"Innova Schools","titulo":"Innova - Suministro materiales (nuevas sedes)","stage":"6 - Ganada","canal":"Recompra","responsable":"Aleja","cop":3544000.0,"pais":"Colombia","tema":"ESI"},{"id":"21","cliente":"Orlando Salcedo","titulo":"Cotización Material Pedagógico","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Juanjo","cop":null,"pais":"","tema":""},{"id":"20","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 077-2025-Museo Itinerante","stage":"6 - Ganada","canal":"Asociados","responsable":"Aleja","cop":177576107.14285716,"pais":"Colombia","tema":""},{"id":"19","cliente":"Erasmus // Santa Isabel","titulo":"Participación Asocio FSI - Convocatoria Erasmus 2026","stage":"Desistida","canal":"Recomendados","responsable":"Juanjo","cop":null,"pais":"","tema":""},{"id":"18","cliente":"Cruz Roja - TDD","titulo":"Concurso narrativas + maletas gestión del riesgo","stage":"6 - Ganada","canal":"Asociados","responsable":"Juanjo","cop":180000000.0,"pais":"Colombia","tema":"Museología"},{"id":"17","cliente":"CRUZ ROJA","titulo":"Dotación Espacios Emergencia NNA_GLI730","stage":"6 - Ganada","canal":"Recomendados","responsable":"Vivi","cop":2438000.0,"pais":"Colombia","tema":"Emergencias"},{"id":"16","cliente":"Yanacá","titulo":"Lici - Cotización 12mil Enriques","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Aleja","cop":299880000.0,"pais":"","tema":""},{"id":"15","cliente":"SCALEDEM","titulo":"SCALEDEM – Piloting Programme Call","stage":"Desistida","canal":"Oportunidad abierta","responsable":"Emmanuel","cop":null,"pais":"","tema":""},{"id":"14","cliente":"Jugando Aprendemos","titulo":"Lici - Cotización 12mil Enriques","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Emmanuel","cop":299880000.0,"pais":"Colombia","tema":"HSE"},{"id":"13","cliente":"Global opportunity\nyouth - GOYN","titulo":"Prospecto para trabajo con Jóvenes y Fundación Corona","stage":"Sin respuesta","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"12","cliente":"Corventas de Colombia SAS","titulo":"Cotización materiales dotación Cruz Roja","stage":"Perdida","canal":"Contacto directo","responsable":"Aleja","cop":2438000.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"11","cliente":"UNESCO","titulo":"UNESCO-Hamdan Prize for Teacher Development","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi","cop":400000000.0,"pais":"Colombia","tema":"Formación Docente"},{"id":"10","cliente":"Fundalectura","titulo":"Cotiz. Fundalectura - 1 Guerra a Voces","stage":"Perdida","canal":"Recompra","responsable":"Aleja","cop":65000.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"9","cliente":"Innova Schools","titulo":"Proyecto EIS Innova Schools","stage":"Desistida","canal":"Recompra","responsable":"Aleja y Juanjo","cop":null,"pais":"Colombia","tema":"ESI"},{"id":"8","cliente":"United Way Honduras","titulo":"Presentación proyectos con United Way","stage":"Desistida","canal":"Gestión comercial","responsable":"Juan Jose","cop":1200000000.0,"pais":"Honduras","tema":""},{"id":"7","cliente":"UNICEF Colombia","titulo":"Fortalecimiento Estrt. Pedagógicas","stage":"Desistida","canal":"Oportunidad abierta","responsable":"","cop":null,"pais":"","tema":""},{"id":"6","cliente":"UNICEF Colombia","titulo":"Plataforma Digital IA Violencia NN","stage":"Desistida","canal":"Oportunidad abierta","responsable":"","cop":null,"pais":"","tema":""},{"id":"5","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 006 - Dispositivos + Bajo desempeño 200","stage":"Desistida","canal":"Oportunidad abierta","responsable":"Vivi","cop":2800000000.0,"pais":"Panamá","tema":"Trayectorias educativas"},{"id":"4","cliente":"UNODC Colombia","titulo":"UNODC - Justicia Restaurativa","stage":"Perdida","canal":"Recompra","responsable":"Aleja, Emmnauel","cop":53000000.0,"pais":"Colombia","tema":"Inclusión Social"},{"id":"3","cliente":"Fundalectura","titulo":"Fundalectura - Convocatoria 2025 Bibliotecas Públicas y Rurales","stage":"Perdida","canal":"Recomendados","responsable":"Aleja","cop":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"2","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 075-2025-Metaverso VR-RA","stage":"Desistida","canal":"Asociados","responsable":"Vivi, juanjo","cop":643191510.0,"pais":"Colombia","tema":"Museología"},{"id":"1","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 076-2025-Contenido Audiovisual y Juegos","stage":"Desistida","canal":"Asociados","responsable":"","cop":null,"pais":"","tema":""}]},{"snapshot_date":"2026-04-17","leads":[{"id":"73","cliente":"Expertise France","titulo":"Proyecto MERA (Cali y Quito)","stage":"Desistida","canal":"Asociados","responsable":"Viviana","cop":255948000.0,"pais":"Colombia","tema":"Género"},{"id":"72","cliente":"MINEDUCYT","titulo":"Libros Primera Inancia Adaptación Discapacidad Visual","stage":"2 - Pre-selección (lista corta)","canal":"Contacto directo","responsable":"Viviana","cop":null,"pais":"El Salvador","tema":"Discapacidad"},{"id":"71","cliente":"Organización Corporación Infancia y Desarrollo","titulo":"Cotización de materiales lúdicos","stage":"6 - Ganada","canal":"Contacto directo","responsable":"Juan Jose","cop":13420683.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"70","cliente":"OEI México - SEMARNAT","titulo":"Formación digital docente ambiental SEMARNAT","stage":"1 - Oportunidad identificada","canal":"Asociados","responsable":"Vivi","cop":255948000.0,"pais":"","tema":""},{"id":"69","cliente":"MINEDUCYT","titulo":"El Salvador Materiales Discapacidad Auditiva","stage":"2 - Pre-selección (lista corta)","canal":"Contacto directo","responsable":"Juan Jose","cop":null,"pais":"El Salvador","tema":"Inclusión Social"},{"id":"68","cliente":"CNMH","titulo":"Reproducción de la exhibición “Voces para transformar a Colombia","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Juan Jose","cop":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"67","cliente":"Libreria Tintea","titulo":"Envío de muestras para colegios y cajas de compensación","stage":"1 - Oportunidad identificada","canal":"Recompra","responsable":"Aleja","cop":null,"pais":"Colombia","tema":"Primera Infancia"},{"id":"66","cliente":"Unicef Honduras","titulo":"Kits Semillero del Cuidado - Honduras","stage":"5 - Negociación","canal":"Contacto directo","responsable":"Juan Jose","cop":53934900.0,"pais":"Honduras","tema":"Primera Infancia"},{"id":"65","cliente":"FUNDACIÓN DECAMERON","titulo":"Decamerón - Materiales cotización+ Transferencia para barranquilla","stage":"5 - Negociación","canal":"Recompra","responsable":"Aleja","cop":5345217.0,"pais":"","tema":""},{"id":"64","cliente":"BID Colombia","titulo":"BID Aulas Inclusivas 2026","stage":"6 - Ganada","canal":"Recompra","responsable":"Juanjo","cop":306674500.0,"pais":"Colombia","tema":"Cohesión Social"},{"id":"63","cliente":"UNICEF El Salvador","titulo":"UNICEF - CONAPINA - Currículo Familiar","stage":"Sin respuesta","canal":"Oportunidad abierta","responsable":"Viviana","cop":332452000.0,"pais":"El Salvador","tema":"Protección NN"},{"id":"62","cliente":"United Way Barranquilla","titulo":"Venta de juegos Crecer Jugando","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"61","cliente":"SED","titulo":"Fortalecimiento de la Atención Integral a la Primera Infancia en 120 Colegios de Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Viviana","cop":null,"pais":"","tema":""},{"id":"60","cliente":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ","titulo":"Kits de Apoyo emocional - SED Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Viviana","cop":500000000.0,"pais":"Colombia","tema":"HSE"},{"id":"59","cliente":"SECRETARÍA GENERAL DE LA ALCALDÍA MAYOR DE BOGOTÁ","titulo":"Trayectorias Educativas Escuelas con Emociones - SED Bogotá","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"Vivi","cop":null,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"58","cliente":"Unicef Honduras","titulo":"Adenda Eduhcafe","stage":"3 - En formulación","canal":"Recompra","responsable":"Juanjo","cop":null,"pais":"","tema":""},{"id":"57","cliente":"HundreED","titulo":"Global Collection 2027","stage":"3 - En formulación","canal":"Oportunidad abierta","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"56","cliente":"Estratégica Comunicaciones","titulo":"MEN - Venta 775 libro \"Conferencia de los pájaros\"","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Juanjo","cop":41060275.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"55","cliente":"FAO","titulo":"FAO - Somos el Bosque Caja Herramientas","stage":"4 - Propuesta enviada","canal":"Recomendados","responsable":"Aleja, Maleja","cop":50419451.0,"pais":"Colombia","tema":"Educación ambiental"},{"id":"54","cliente":"CAPS & CISCO","titulo":"Proyecto RSE con CISCO","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","responsable":"J, E","cop":null,"pais":"","tema":""},{"id":"53","cliente":"Vanti","titulo":"Vanti - Operador Acción Social","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Vivi","cop":950324211.0,"pais":"Colombia","tema":"Responsabilidad Social Empresarial"},{"id":"52","cliente":"BRITISH COUNCIL","titulo":"Diseño del Currículo de Inglés de Barranquilla","stage":"Perdida","canal":"Contacto directo","responsable":"Juanjo","cop":192877714.0,"pais":"Colombia","tema":""},{"id":"51","cliente":"United way Colombia","titulo":"Libro de socialización investigaciones","stage":"1 - Oportunidad identificada","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"Colombia","tema":"Investigación"},{"id":"50","cliente":"MINEDUCYT","titulo":"MINEDUCYT - Transformación Digital","stage":"2 - Pre-selección (lista corta)","canal":"Oportunidad abierta","responsable":"Vivi","cop":null,"pais":"El Salvador","tema":"Educación Digital"},{"id":"49","cliente":"SED Bogotá","titulo":"SED Bogotá - Trayectorias Educativas y OSO JcP","stage":"4 - Propuesta enviada","canal":"Asociados","responsable":"Emmanuel","cop":477128662.0,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"48","cliente":"MINISTERIO DE CULTURA - El Salvador","titulo":"Impresión de libros de la series Semilla y Maquilishuat I","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Vivi","cop":494660412.0,"pais":"El Salvador","tema":"Primera Infancia"},{"id":"47","cliente":"Busca libre","titulo":"Alianza distribución","stage":"6 - Ganada","canal":"Contacto directo","responsable":"Aleja","cop":null,"pais":"","tema":""},{"id":"46","cliente":"COLSUBSIDIO","titulo":"Formación Colsubsidio","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Aleja-Vivi","cop":53997778.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"45","cliente":"GOBERNACION DE CUNDINAMARCA - SECRETARIA DE LA MUJER Y EQUIDAD DE GENERO","titulo":"DESARROLLO DE LA ESTRATEGIA DIGNIDAD MENSTRUAL - MUJERES DE CUNDINAMARCA","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi /Aleja","cop":null,"pais":"Colombia","tema":"Género"},{"id":"44","cliente":"ARN","titulo":"Estrategia de Prevención y Superación de la Estigmatización de personas en proceso de reincorporación","stage":"1 - Oportunidad identificada","canal":"Oportunidad abierta","responsable":"","cop":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"43","cliente":"UNICEF Colombia","titulo":"UNICEF - Estrategia Protección Escuelas","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi y Aleja","cop":343681214.0,"pais":"Colombia","tema":"Protección NN"},{"id":"42","cliente":"BID Bolívia","titulo":"Promoción Lectura Bolívia rural","stage":"5 - Negociación","canal":"Contacto directo","responsable":"Vivi","cop":88000000.0,"pais":"Bolívia","tema":"Lectoescritura"},{"id":"41","cliente":"MINEDUCYT","titulo":"Impresión de Materiales Kit Lectura en Casa","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Emmanuel","cop":4206705620.0,"pais":"El Salvador","tema":"Educación NN"},{"id":"40","cliente":"Fondo Acción","titulo":"Estrategia de sensibilización y generación de capacidades sobre Sistemas de\nComercio de Emisiones","stage":"2 - Pre-selección (lista corta)","canal":"Asociados","responsable":"Vivi, Juanjo","cop":null,"pais":"Colombia","tema":"Educación ambiental"},{"id":"39","cliente":"Panamericana","titulo":"Conferencia de los Pájaros 611 und","stage":"4 - Propuesta enviada","canal":"Contacto directo","responsable":"Aleja","cop":32260800.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"38","cliente":"COLSUBSIDIO","titulo":"Evento Colsubsidio","stage":"Desistida","canal":"Contacto directo","responsable":"","cop":50000000.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"37","cliente":"CAMARA DE COMERCIO DE BOGOTA D.C.","titulo":"Programa de Emprendimiento para Colegios de la CCB","stage":"Perdida","canal":"Oportunidad abierta","responsable":"Vivi","cop":604106163.0,"pais":"","tema":""},{"id":"36","cliente":"ALDEAS INFANTILES SOS","titulo":"Aldeas Infantiles - Redes de Cuidado_Caja Heramientas ICBF","stage":"6 - Ganada","canal":"Recomendados","responsable":"Juan José","cop":80000000.0,"pais":"Colombia","tema":"Protección NN"},{"id":"35","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 002 - Bajo desempeño 200 centros","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi","cop":1400000000.0,"pais":"Panamá","tema":"Fortalecimiento de capacidades"},{"id":"34","cliente":"UNICEF Colombia","titulo":"Generación verde Pacífico","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Aleja, Vivi","cop":2400000000.0,"pais":"Colombia","tema":"Educación ambiental"},{"id":"33","cliente":"Secretaria de Educación de Antioquia - Corporación Interuniversitaria de servicios -CIS","titulo":"Programa ALFA - Gob Antioquia / CIS","stage":"6 - Ganada","canal":"Gestión comercial","responsable":"Vivi","cop":1748207799.0,"pais":"Colombia","tema":"Trayectorias educativas"},{"id":"32","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 007 - Dispositivos + Inclusión","stage":"Perdida","canal":"Oportunidad abierta","responsable":"Vivi, Aleja, Juanjo","cop":500000000.0,"pais":"Panamá","tema":"Inclusión Social"},{"id":"31","cliente":"UNICEF Colombia","titulo":"UNICEF SI-Fortalecimiento Protección 12 IEs","stage":"Desistida","canal":"Oportunidad abierta","responsable":"Vivi y Aleja","cop":1400000000.0,"pais":"Colombia","tema":"Protección NN"},{"id":"30","cliente":"Tinker","titulo":"Tinker - OEI y SED Chiapas Diagnostico","stage":"No preseleccionada","canal":"Gestión comercial","responsable":"Vivi","cop":600000000.0,"pais":"México","tema":"Trayectorias educativas"},{"id":"29","cliente":"Organización Corporación Infancia y Desarrollo","titulo":"Compra de materiales","stage":"Perdida","canal":"Contacto directo","responsable":"Juanjo Aleja","cop":null,"pais":"","tema":""},{"id":"28","cliente":"Biblioteca Nacional","titulo":"Premio Incentivo Bologna Fair","stage":"Perdida","canal":"Oportunidad abierta","responsable":"Juanjo","cop":9000000.0,"pais":"Colombia","tema":"Educación NN"},{"id":"27","cliente":"Libreria Tintea","titulo":"Tintea - Compra de materiales","stage":"Perdida","canal":"Recompra","responsable":"Aleja","cop":415000.0,"pais":"Colombia","tema":"Primera Infancia"},{"id":"26","cliente":"Futbol con Corazón","titulo":"FCC - Salud mental jóvenes - HSE","stage":"Desistida","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"25","cliente":"El Salvador Materiales","titulo":"Materiales El Salvador 2","stage":"Desistida","canal":"Recomendados","responsable":"Anas, Vivi","cop":null,"pais":"","tema":""},{"id":"24","cliente":"Colegio Campestre San josé","titulo":"Envío brochure para posible compra de materiales","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Aleja","cop":null,"pais":"","tema":""},{"id":"23","cliente":"Manos unidas","titulo":"Venta juego memociones","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Aleja","cop":null,"pais":"","tema":""},{"id":"22","cliente":"Innova Schools","titulo":"Innova - Suministro materiales (nuevas sedes)","stage":"6 - Ganada","canal":"Recompra","responsable":"Aleja","cop":3544000.0,"pais":"Colombia","tema":"ESI"},{"id":"21","cliente":"Orlando Salcedo","titulo":"Cotización Material Pedagógico","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Juanjo","cop":null,"pais":"","tema":""},{"id":"20","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 077-2025-Museo Itinerante","stage":"6 - Ganada","canal":"Asociados","responsable":"Aleja","cop":177576107.0,"pais":"Colombia","tema":""},{"id":"19","cliente":"Erasmus // Santa Isabel","titulo":"Participación Asocio FSI - Convocatoria Erasmus 2026","stage":"Desistida","canal":"Recomendados","responsable":"Juanjo","cop":null,"pais":"","tema":""},{"id":"18","cliente":"Cruz Roja - TDD","titulo":"Concurso narrativas + maletas gestión del riesgo","stage":"6 - Ganada","canal":"Asociados","responsable":"Juanjo","cop":180000000.0,"pais":"Colombia","tema":"Museología"},{"id":"17","cliente":"CRUZ ROJA","titulo":"Dotación Espacios Emergencia NNA_GLI730","stage":"6 - Ganada","canal":"Recomendados","responsable":"Vivi","cop":2438000.0,"pais":"Colombia","tema":"Emergencias"},{"id":"16","cliente":"Yanacá","titulo":"Lici - Cotización 12mil Enriques","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Aleja","cop":299880000.0,"pais":"","tema":""},{"id":"15","cliente":"SCALEDEM","titulo":"SCALEDEM – Piloting Programme Call","stage":"Desistida","canal":"Oportunidad abierta","responsable":"Emmanuel","cop":null,"pais":"","tema":""},{"id":"14","cliente":"Jugando Aprendemos","titulo":"Lici - Cotización 12mil Enriques","stage":"Sin respuesta","canal":"Contacto directo","responsable":"Emmanuel","cop":299880000.0,"pais":"Colombia","tema":"HSE"},{"id":"13","cliente":"Global opportunity\nyouth - GOYN","titulo":"Prospecto para trabajo con Jóvenes y Fundación Corona","stage":"Sin respuesta","canal":"Gestión comercial","responsable":"Juan Jose","cop":null,"pais":"","tema":""},{"id":"12","cliente":"Corventas de Colombia SAS","titulo":"Cotización materiales dotación Cruz Roja","stage":"Perdida","canal":"Contacto directo","responsable":"Aleja","cop":2438000.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"11","cliente":"UNESCO","titulo":"UNESCO-Hamdan Prize for Teacher Development","stage":"4 - Propuesta enviada","canal":"Oportunidad abierta","responsable":"Vivi","cop":400000000.0,"pais":"Colombia","tema":"Formación Docente"},{"id":"10","cliente":"Fundalectura","titulo":"Cotiz. Fundalectura - 1 Guerra a Voces","stage":"Perdida","canal":"Recompra","responsable":"Aleja","cop":65000.0,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"9","cliente":"Innova Schools","titulo":"Proyecto EIS Innova Schools","stage":"Desistida","canal":"Recompra","responsable":"Aleja y Juanjo","cop":null,"pais":"Colombia","tema":"ESI"},{"id":"8","cliente":"United Way Honduras","titulo":"Presentación proyectos con United Way","stage":"Desistida","canal":"Gestión comercial","responsable":"Juan Jose","cop":1200000000.0,"pais":"Honduras","tema":""},{"id":"7","cliente":"UNICEF Colombia","titulo":"Fortalecimiento Estrt. Pedagógicas","stage":"Desistida","canal":"Oportunidad abierta","responsable":"","cop":null,"pais":"","tema":""},{"id":"6","cliente":"UNICEF Colombia","titulo":"Plataforma Digital IA Violencia NN","stage":"Desistida","canal":"Oportunidad abierta","responsable":"","cop":null,"pais":"","tema":""},{"id":"5","cliente":"OEI Panamá - Ministerio de Educación de Panamá","titulo":"OEI Panamá 006 - Dispositivos + Bajo desempeño 200","stage":"Desistida","canal":"Oportunidad abierta","responsable":"Vivi","cop":2800000000.0,"pais":"Panamá","tema":"Trayectorias educativas"},{"id":"4","cliente":"UNODC Colombia","titulo":"UNODC - Justicia Restaurativa","stage":"Perdida","canal":"Recompra","responsable":"Aleja, Emmnauel","cop":53000000.0,"pais":"Colombia","tema":"Inclusión Social"},{"id":"3","cliente":"Fundalectura","titulo":"Fundalectura - Convocatoria 2025 Bibliotecas Públicas y Rurales","stage":"Perdida","canal":"Recomendados","responsable":"Aleja","cop":null,"pais":"Colombia","tema":"Ciudadanía y paz"},{"id":"2","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 075-2025-Metaverso VR-RA","stage":"Desistida","canal":"Asociados","responsable":"Vivi, juanjo","cop":643191510.0,"pais":"Colombia","tema":"Museología"},{"id":"1","cliente":"CRUZ ROJA","titulo":"Cruz Roja - 076-2025-Contenido Audiovisual y Juegos","stage":"Desistida","canal":"Asociados","responsable":"","cop":null,"pais":"","tema":""}]}]</script>
 <script>
 (function(){
-  var F=[{k:'1 - Oportunidad identificada',s:'Oportunidad',n:1},{k:'2 - Pre-selección (lista corta)',s:'Pre-selección',n:2},{k:'3 - En formulación',s:'En formulación',n:3},{k:'4 - Propuesta enviada',s:'Enviada',n:4},{k:'5 - Negociación',s:'Negociación',n:5},{k:'6 - Ganada',s:'Ganada',n:6}];
-  var T=[{k:'Perdida',s:'Perdida'},{k:'Desistida',s:'Desistida'},{k:'Sin respuesta',s:'Sin respuesta'},{k:'No preseleccionada',s:'No preseleccionada'}];
+  var F=[{k:'1 - Oportunidad identificada',s:'Oportunidad',n:1,id:'f1',sec:'f'},{k:'2 - Pre-selección (lista corta)',s:'Pre-selección',n:2,id:'f2',sec:'f'},{k:'3 - En formulación',s:'En formulación',n:3,id:'f3',sec:'f'},{k:'4 - Propuesta enviada',s:'Enviada',n:4,id:'f4',sec:'f'},{k:'5 - Negociación',s:'Negociación',n:5,id:'f5',sec:'f'},{k:'6 - Ganada',s:'Ganada',n:6,id:'f6',sec:'f'}];
+  var T=[{k:'Perdida',s:'Perdida',id:'t1',sec:'t'},{k:'Desistida',s:'Desistida',id:'t2',sec:'t'},{k:'Sin respuesta',s:'Sin respuesta',id:'t3',sec:'t'},{k:'No preseleccionada',s:'No preseleccionada',id:'t4',sec:'t'}];
+  var ALL=F.concat(T);
   var CC={'Oportunidad abierta':'#7F77DD','Gestión comercial':'#1D9E75','Recompra':'#D85A30','Contacto directo':'#378ADD','Recomendados':'#D4537E','Asociados':'#BA7517','Sin clasificar':'#888780'};
 
   var raw=JSON.parse(document.getElementById('dd').textContent);
-  var snaps=Array.isArray(raw)?raw.sort(function(a,b){return a.snapshot_date.localeCompare(b.snapshot_date)}):[raw];
+  var snaps=Array.isArray(raw)?raw.slice().sort(function(a,b){return a.snapshot_date.localeCompare(b.snapshot_date)}):[raw];
   var ci=snaps.length-1;
   var ac=new Set(Object.keys(CC));
-
-  if(snaps.length>1){
-    var sld=document.getElementById('sl');sld.style.display='flex';
-    var sr=document.getElementById('sr');sr.max=snaps.length-1;sr.value=ci;
-    sr.addEventListener('input',function(e){ci=parseInt(e.target.value,10);rn()});
-  }
+  var dotEls={}; // lead_id -> dom element (lives in one of the overlays)
+  var leadDataById={};
+  var playing=false, playTimer=null;
 
   function fmtCOP(v){if(v==null)return'Sin valor';if(v>=1e6)return'$'+Math.round(v/1e6).toLocaleString('es-CO')+' M';return'$'+Math.round(v).toLocaleString('es-CO')}
+  function ec(s){return String(s||'').replace(/[&<>"\x27]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"\x27":'&#39;'}[c]})}
 
-  function bl(){
-    var w=document.getElementById('lg');
+  function buildSkeleton(){
+    var fw=document.getElementById('fn');fw.innerHTML='';
+    F.forEach(function(s){
+      var col=document.createElement('div');col.className='cl';
+      col.innerHTML='<div class="cl-h">'+s.n+'. '+s.s+'</div><div class="cl-c" id="c-'+s.id+'">0</div><div class="ds" id="d-'+s.id+'"></div>';
+      fw.appendChild(col);
+    });
+    var tw=document.getElementById('tm');tw.innerHTML='';
+    T.forEach(function(s){
+      var col=document.createElement('div');col.className='cl tm';
+      col.innerHTML='<div class="cl-h">'+s.s+'</div><div class="cl-c" id="c-'+s.id+'">0</div><div class="ds" id="d-'+s.id+'"></div>';
+      tw.appendChild(col);
+    });
+  }
+
+  function buildLegend(){
+    var w=document.getElementById('lg');w.innerHTML='';
     var allCanals=new Set();snaps.forEach(function(s){s.leads.forEach(function(l){allCanals.add(l.canal)})});
     Object.entries(CC).forEach(function(e){
       var c=e[0],co=e[1];if(!allCanals.has(c))return;
       var el=document.createElement('div');el.className='li';
       el.innerHTML='<span class="ld" style="background:'+co+'"></span><span>'+c+'</span>';
-      el.addEventListener('click',function(){if(ac.has(c))ac.delete(c);else ac.add(c);if(ac.size===0)ac=new Set(Object.keys(CC));el.classList.toggle('off',!ac.has(c));rn()});
+      el.addEventListener('click',function(){
+        if(ac.has(c))ac.delete(c);else ac.add(c);
+        if(ac.size===0)ac=new Set(Object.keys(CC));
+        el.classList.toggle('off',!ac.has(c));
+        updateVisibility();
+      });
       w.appendChild(el);
     });
   }
@@ -100,45 +138,186 @@
   var te=function(){return document.getElementById('tp')};
   function st(h,x,y){var t=te();t.innerHTML=h;t.classList.add('on');var r=t.getBoundingClientRect();var lx=x+12,ly=y+12;if(lx+r.width>window.innerWidth-8)lx=x-r.width-12;if(ly+r.height>window.innerHeight-8)ly=y-r.height-12;t.style.left=lx+'px';t.style.top=ly+'px'}
   function ht(){te().classList.remove('on')}
-  function ec(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function tipHtml(l){var v=fmtCOP(l.cop);var m=[ec(l.canal),v];if(l.responsable)m.push(ec(l.responsable));if(l.pais)m.push(ec(l.pais));return'<div class="tp-t">'+ec(l.cliente)+'</div><div class="tp-r">'+ec(l.titulo||'(sin título)')+'</div><div class="tp-r" style="margin-top:4px"><b style="color:'+(CC[l.canal]||CC['Sin clasificar'])+'">●</b> '+m.join(' · ')+'</div>'}
 
-  function th(l){
-    var v=fmtCOP(l.cop);var m=[ec(l.canal),v];
-    if(l.responsable)m.push(ec(l.responsable));if(l.pais)m.push(ec(l.pais));
-    return'<div class="tp-t">'+ec(l.cliente)+'</div><div class="tp-r">'+ec(l.titulo||'(sin título)')+'</div><div class="tp-r" style="margin-top:4px"><b style="color:'+(CC[l.canal]||CC['Sin clasificar'])+'">●</b> '+m.join(' · ')+'</div>';
+  function createDot(lead){
+    var d=document.createElement('div');
+    d.className='dt entering'+(isTerminal(lead.stage)?' tm':'');
+    d.style.background=CC[lead.canal]||CC['Sin clasificar'];
+    d.dataset.leadId=lead.id;
+    d.addEventListener('mouseenter',function(e){var l=leadDataById[lead.id];if(l)st(tipHtml(l),e.clientX,e.clientY)});
+    d.addEventListener('mousemove',function(e){st(te().innerHTML,e.clientX,e.clientY)});
+    d.addEventListener('mouseleave',ht);
+    return d;
   }
 
-  function bc(stage,leads,isTm){
-    var inS=leads.filter(function(l){return l.stage===stage.k});
-    var vis=inS.filter(function(l){return ac.has(l.canal)});
-    var col=document.createElement('div');col.className='cl'+(isTm?' tm':'');
-    var sub=inS.length!==vis.length?' <span style="font-size:11px;color:var(--text-3);font-weight:400">de '+inS.length+'</span>':'';
-    var lb=isTm?stage.s:(stage.n+'. '+stage.s);
-    col.innerHTML='<div class="cl-h">'+lb+'</div><div class="cl-c">'+vis.length+sub+'</div><div class="ds"></div>';
-    var dots=col.querySelector('.ds');
-    inS.forEach(function(l){
-      var d=document.createElement('div');
-      d.className='dt'+(isTm?' tm':'')+(ac.has(l.canal)?'':' dm');
-      d.style.background=CC[l.canal]||CC['Sin clasificar'];
-      d.addEventListener('mouseenter',function(e){st(th(l),e.clientX,e.clientY)});
-      d.addEventListener('mousemove',function(e){st(te().innerHTML,e.clientX,e.clientY)});
-      d.addEventListener('mouseleave',ht);
-      dots.appendChild(d);
-    });return col;
+  function isTerminal(stage){return T.some(function(t){return t.k===stage})}
+  function stageMeta(stage){
+    var f=F.find(function(x){return x.k===stage});if(f)return f;
+    var t=T.find(function(x){return x.k===stage});if(t)return t;
+    return null;
   }
 
-  function rn(){
+  // Compute the target absolute position of a dot within its overlay (section-relative)
+  function computePosition(stageId, indexInColumn, sectionEl){
+    var ds=document.getElementById('d-'+stageId);
+    if(!ds||!sectionEl)return{x:0,y:0};
+    var dsRect=ds.getBoundingClientRect();
+    var secRect=sectionEl.getBoundingClientRect();
+    var dotSize=11,gap=4,step=dotSize+gap;
+    var w=ds.clientWidth;
+    var perRow=Math.max(1,Math.floor((w+gap)/step));
+    var col=indexInColumn%perRow, row=Math.floor(indexInColumn/perRow);
+    // Position relative to the section (where overlay lives), inside the .ds padding area
+    var x=dsRect.left-secRect.left+col*step;
+    var y=dsRect.top-secRect.top+row*step;
+    return{x:x,y:y};
+  }
+
+  function renderSnapshot(){
     var snap=snaps[ci];var leads=snap.leads;
     document.getElementById('sd').textContent=snap.snapshot_date;
     if(snaps.length>1)document.getElementById('sv').textContent=snap.snapshot_date;
-    var fw=document.getElementById('fn');fw.innerHTML='';
-    F.forEach(function(s){fw.appendChild(bc(s,leads,false))});
-    var tw=document.getElementById('tm');tw.innerHTML='';
-    T.forEach(function(s){tw.appendChild(bc(s,leads,true))});
-    var tot=leads.filter(function(l){return ac.has(l.canal)}).length;
-    document.getElementById('ct').textContent=tot+' propuestas mostradas · '+leads.length+' totales';
+
+    leadDataById={};
+    var byStage={};ALL.forEach(function(s){byStage[s.id]=[]});
+    leads.forEach(function(l){
+      leadDataById[l.id]=l;
+      var sm=stageMeta(l.stage);
+      if(sm)byStage[sm.id].push(l);
+    });
+
+    var currentIds=new Set(leads.map(function(l){return l.id}));
+    var secF=document.getElementById('sec-f');
+    var secT=document.getElementById('sec-t');
+    var ovF=document.getElementById('ov-f');
+    var ovT=document.getElementById('ov-t');
+
+    // 1. Create new dots for leads that don't have elements yet
+    leads.forEach(function(l){
+      if(!dotEls[l.id]){
+        var d=createDot(l);
+        var sm=stageMeta(l.stage);
+        var ov=sm&&sm.sec==='t'?ovT:ovF;
+        ov.appendChild(d);
+        dotEls[l.id]=d;
+      }
+    });
+
+    // 2. For each existing dot: update color/terminal class and move to correct overlay if needed
+    leads.forEach(function(l){
+      var d=dotEls[l.id];
+      var sm=stageMeta(l.stage);
+      var targetOv=sm&&sm.sec==='t'?ovT:ovF;
+      if(d.parentElement!==targetOv){
+        // Before moving between overlays, compute current visual position and set it as starting point
+        // so the transition starts from where the dot visually is
+        var oldRect=d.getBoundingClientRect();
+        targetOv.appendChild(d);
+        var newSecRect=targetOv.getBoundingClientRect();
+        // Set starting position in the new overlay's coordinate space (no animation)
+        d.style.transition='none';
+        d.style.left=(oldRect.left-newSecRect.left)+'px';
+        d.style.top=(oldRect.top-newSecRect.top)+'px';
+        // Force reflow
+        d.offsetHeight;
+        d.style.transition='';
+      }
+      d.style.background=CC[l.canal]||CC['Sin clasificar'];
+      if(isTerminal(l.stage))d.classList.add('tm');else d.classList.remove('tm');
+    });
+
+    // 3. Mark leaving dots
+    Object.keys(dotEls).forEach(function(id){
+      if(!currentIds.has(id)){
+        var d=dotEls[id];
+        if(!d.classList.contains('leaving')){
+          d.classList.add('leaving');
+          setTimeout(function(){
+            if(d.parentElement)d.parentElement.removeChild(d);
+            delete dotEls[id];
+          },500);
+        }
+      }
+    });
+
+    // 4. Compute target positions for every dot and apply
+    ALL.forEach(function(s){
+      var secEl=s.sec==='t'?secT:secF;
+      byStage[s.id].forEach(function(l,i){
+        var d=dotEls[l.id];
+        var p=computePosition(s.id,i,secEl);
+        d.style.left=p.x+'px';
+        d.style.top=p.y+'px';
+        // Remove entering class on next frame for fade-in
+        if(d.classList.contains('entering')){
+          requestAnimationFrame(function(){
+            requestAnimationFrame(function(){d.classList.remove('entering')});
+          });
+        }
+      });
+    });
+
+    updateVisibility();
   }
-  bl();rn();
+
+  function updateVisibility(){
+    Object.keys(dotEls).forEach(function(id){
+      var l=leadDataById[id];if(!l)return;
+      var d=dotEls[id];
+      if(ac.has(l.canal))d.classList.remove('dm');else d.classList.add('dm');
+    });
+    // Recount per column
+    var snap=snaps[ci];
+    var counts={};ALL.forEach(function(s){counts[s.id]=0});
+    snap.leads.forEach(function(l){
+      if(!ac.has(l.canal))return;
+      var sm=stageMeta(l.stage);if(sm)counts[sm.id]++;
+    });
+    ALL.forEach(function(s){
+      var el=document.getElementById('c-'+s.id);
+      if(el)el.textContent=counts[s.id];
+    });
+    var tot=snap.leads.filter(function(l){return ac.has(l.canal)}).length;
+    document.getElementById('ct').textContent=tot+' propuestas mostradas · '+snap.leads.length+' totales';
+  }
+
+  if(snaps.length>1){
+    var sld=document.getElementById('sl');sld.style.display='flex';
+    var sr=document.getElementById('sr');sr.max=snaps.length-1;sr.value=ci;
+    sr.addEventListener('input',function(e){stopPlay();ci=parseInt(e.target.value,10);renderSnapshot()});
+    document.getElementById('sb-prev').addEventListener('click',function(){stopPlay();if(ci>0){ci--;sr.value=ci;renderSnapshot()}});
+    document.getElementById('sb-next').addEventListener('click',function(){stopPlay();if(ci<snaps.length-1){ci++;sr.value=ci;renderSnapshot()}});
+    document.getElementById('sb-play').addEventListener('click',togglePlay);
+  }
+
+  function togglePlay(){
+    if(playing){stopPlay();return}
+    playing=true;
+    document.getElementById('sb-play').textContent='⏸ Pausar';
+    if(ci>=snaps.length-1)ci=0;
+    var sr=document.getElementById('sr');sr.value=ci;renderSnapshot();
+    playTimer=setInterval(function(){
+      if(ci>=snaps.length-1){stopPlay();return}
+      ci++;sr.value=ci;renderSnapshot();
+    },1400);
+  }
+  function stopPlay(){
+    playing=false;
+    if(playTimer){clearInterval(playTimer);playTimer=null}
+    var b=document.getElementById('sb-play');if(b)b.textContent='▶ Reproducir';
+  }
+
+  var resizeTimer;
+  window.addEventListener('resize',function(){
+    clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(renderSnapshot,150);
+  });
+
+  buildSkeleton();
+  buildLegend();
+  // First render: wait for layout
+  requestAnimationFrame(function(){requestAnimationFrame(renderSnapshot)});
 })();
 </script>
 </body>
